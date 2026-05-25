@@ -1,7 +1,7 @@
 name: Publish Package FAST.Gate.Client
 
 env:
-  PFOLDER: "FAST.Gate.Client"  # Path to the project folder
+  PFOLDER: "FAST.Gate.Client"  # Path to the project  
   PNAME: "FAST.Gate.Client" # project name without extension
 
 on:

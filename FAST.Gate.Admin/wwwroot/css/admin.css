@@ -1,0 +1,264 @@
+/* ── Fonts ──────────────────────────────────────────────────── */
+:root {
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --sidebar-bg: #1a1f2e;
+  --sidebar-width: 240px;
+  --log-height: 160px;
+  --color-accent: #3d8bfd;
+  --radius: 8px;
+}
+
+body { font-family: var(--font-body); }
+.font-mono { font-family: var(--font-mono) !important; }
+
+/* ── Sidebar ─────────────────────────────────────────────────── */
+.app-sidebar {
+  background: var(--sidebar-bg) !important;
+}
+
+.nav-header {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.3);
+  padding: 0.25rem 0.75rem;
+  text-transform: uppercase;
+}
+
+.app-sidebar .nav-link {
+  border-radius: 6px;
+  margin: 1px 0;
+  padding: 7px 10px;
+  font-size: 0.84rem;
+  color: rgba(255,255,255,0.6) !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s, color 0.15s;
+  text-decoration: none;
+}
+
+.app-sidebar .nav-link:hover,
+.app-sidebar .nav-link.active {
+  background: rgba(61,139,253,0.15);
+  color: #6ea8fe !important;
+}
+
+.app-sidebar .nav-link p {
+  margin: 0;
+  line-height: 1;
+}
+
+.nav-icon {
+  font-size: 0.9rem;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* ── Top Navbar ──────────────────────────────────────────────── */
+.app-header {
+  box-shadow: 0 1px 0 rgba(0,0,0,0.07);
+}
+
+.avatar-circle {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-accent), #6ea8fe);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatar-circle-lg {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-accent), #6ea8fe);
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Main content bottom padding for log panel ───────────────── */
+.app-main {
+  padding-bottom: var(--log-height);
+}
+
+/* ── Cards & Applets ─────────────────────────────────────────── */
+.applet-card {
+  border: 1px solid rgba(0,0,0,0.07);
+  border-radius: var(--radius);
+}
+
+.applet-card .card-header {
+  background: rgba(0,0,0,0.02);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+/* ── Stat Cards ──────────────────────────────────────────────── */
+.stat-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.stat-value {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+
+.stat-label { font-size: 0.72rem; color: #6c757d; }
+
+/* ── JSON Viewer ─────────────────────────────────────────────── */
+.json-viewer { overflow: hidden; }
+
+.json-viewer-header {
+  background: rgba(0,0,0,0.03);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+.json-content {
+  background: #1e2433;
+  color: #abb2bf;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  line-height: 1.6;
+  padding: 1rem;
+  max-height: 380px;
+  overflow-y: auto;
+  margin: 0;
+}
+
+/* ── Operation Log ───────────────────────────────────────────── */
+.op-log-panel {
+  position: fixed;
+  bottom: 0;
+  left: var(--sidebar-width);
+  right: 0;
+  height: var(--log-height);
+  z-index: 1000;
+  background: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -1px 0 rgba(0,0,0,0.08);
+}
+
+.op-log-header {
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+.op-log-body { flex: 1; overflow-y: auto; }
+
+.op-log-entry {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+
+.op-log-error { background: rgba(220,53,69,0.04); }
+.op-log-time  { color: #6c757d; flex-shrink: 0; }
+.op-log-method { flex-shrink: 0; font-size: 0.65rem !important; }
+.op-log-endpoint { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.op-log-status { flex-shrink: 0; font-weight: 600; }
+.op-log-elapsed { flex-shrink: 0; }
+.op-log-detail { flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Login Page ──────────────────────────────────────────────── */
+.login-wrapper {
+  background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%);
+  min-height: 100vh;
+}
+
+.login-card { width: 100%; max-width: 420px; padding: 1rem; }
+
+.login-logo {
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #3d8bfd, #6ea8fe);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  box-shadow: 0 8px 20px rgba(61,139,253,0.3);
+  color: white;
+  font-size: 1.6rem;
+}
+
+/* ── Health ──────────────────────────────────────────────────── */
+.health-indicator {
+  width: 80px; height: 80px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; margin: 0 auto;
+}
+.health-ok   { background: rgba(25,135,84,0.1); }
+.health-fail { background: rgba(220,53,69,0.1); }
+.health-checking { background: rgba(13,110,253,0.1); }
+
+/* ── Scrollbar ───────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; }
+
+/* ── Custom Sidebar (replaces AdminLTE sidebar) ──────────────── */
+.sidebar-hidden { transform: translateX(-240px); }
+.sidebar-visible { transform: translateX(0); }
+
+.nav-section-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.3);
+  text-transform: uppercase;
+  padding: 0.5rem 0.5rem 0.25rem;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  margin: 1px 0;
+  font-size: 0.84rem;
+  color: rgba(255,255,255,0.6) !important;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebar-link:hover {
+  background: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.9) !important;
+}
+
+.sidebar-link.active {
+  background: rgba(61,139,253,0.18);
+  color: #6ea8fe !important;
+}
+
+.sidebar-link i {
+  font-size: 0.9rem;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}

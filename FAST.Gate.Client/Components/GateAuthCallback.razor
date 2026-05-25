@@ -1,0 +1,78 @@
+@inject GateAuthClient GateAuth
+@inject FastAuthStateProvider AuthState
+@inject NavigationManager Nav
+@using FAST.Gate.Client.Abstractions
+@using FAST.Gate.Client.Auth
+@using Microsoft.AspNetCore.WebUtilities
+
+@if (_processing)
+{
+    <p>Signing you in...</p>
+}
+else if (_error is not null)
+{
+    <p>Login failed: @_error</p>
+}
+
+@code {
+    /// <summary>Called when authentication succeeds. Navigate the user from here.</summary>
+    [Parameter] public EventCallback<FastAuthResult> OnSuccess { get; set; }
+
+    /// <summary>Called when authentication fails.</summary>
+    [Parameter] public EventCallback<GateError> OnError { get; set; }
+
+    /// <summary>Where to navigate on success if OnSuccess is not set. Default: "/".</summary>
+    [Parameter] public string SuccessUrl { get; set; } = "/";
+
+    /// <summary>Where to navigate on error if OnError is not set. Default: "/login-failed".</summary>
+    [Parameter] public string ErrorUrl { get; set; } = "/login-failed";
+
+    private bool _processing = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = new Uri(Nav.Uri);
+        var query = QueryHelpers.ParseQuery(uri.Query);
+
+        if (!query.TryGetValue("code", out var code) || string.IsNullOrWhiteSpace(code))
+        {
+            _processing = false;
+            _error = "No authorization code received.";
+
+            var gateError = GateError.Create(
+                GateErrorCodes.MissingCredentials,
+                "No authorization code in callback URL.",
+                Guid.NewGuid().ToString("N"));
+
+            if (OnError.HasDelegate)
+                await OnError.InvokeAsync(gateError);
+            else
+                Nav.NavigateTo(ErrorUrl);
+
+            return;
+        }
+
+        var result = await GateAuth.ExchangeSsoCodeAsync(code!);
+        _processing = false;
+
+        if (result.IsSuccess)
+        {
+            AuthState.NotifyAuthSuccess(result);
+
+            if (OnSuccess.HasDelegate)
+                await OnSuccess.InvokeAsync(result);
+            else
+                Nav.NavigateTo(SuccessUrl);
+        }
+        else
+        {
+            _error = result.Error?.Message ?? "Authentication failed.";
+
+            if (OnError.HasDelegate)
+                await OnError.InvokeAsync(result.Error);
+            else
+                Nav.NavigateTo(ErrorUrl);
+        }
+    }
+}

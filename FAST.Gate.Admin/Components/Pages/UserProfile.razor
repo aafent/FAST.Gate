@@ -1,0 +1,70 @@
+@page "/user/profile"
+@inject FastAuthStateProvider AuthState
+
+<PageTitle>Profile — FAST.Gate Admin</PageTitle>
+
+<div class="row g-3">
+    <div class="col-12">
+        <h5 class="fw-semibold mb-1"><i class="bi bi-person-circle text-primary me-2"></i>User Profile</h5>
+    </div>
+
+    @{
+        var user = AuthState.CurrentAuth?.User;
+    }
+
+    @if (user is not null)
+    {
+        <div class="col-lg-4">
+            <div class="card shadow-sm text-center p-4">
+                <div class="avatar-circle-lg mx-auto mb-3">
+                    @user.FirstName.Substring(0, 1).ToUpper()@user.LastName.Substring(0, 1).ToUpper()
+                </div>
+                <h5 class="fw-semibold mb-1">@user.DisplayName</h5>
+                <p class="text-muted small mb-2">@user.Email</p>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">@user.LoginName</span>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header py-2">
+                    <span class="small fw-semibold">Profile Fields</span>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-sm table-hover mb-0">
+                        <tbody>
+                            <ProfileRow Label="ID"          Value="@user.Id"          Mono="true" />
+                            <ProfileRow Label="Login Name"  Value="@user.LoginName" />
+                            <ProfileRow Label="First Name"  Value="@user.FirstName" />
+                            <ProfileRow Label="Last Name"   Value="@user.LastName" />
+                            <ProfileRow Label="Display Name" Value="@user.DisplayName" />
+                            <ProfileRow Label="Email"       Value="@user.Email" />
+                            <ProfileRow Label="Tenant ID"   Value="@(user.TenantId ?? "—")" Mono="true" />
+                            <ProfileRow Label="Avatar URL"  Value="@(user.AvatarUrl ?? "—")" />
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mt-3">
+                <div class="card-header py-2">
+                    <span class="small fw-semibold">Session Info</span>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <tbody>
+                            <ProfileRow Label="Expires At"    Value="@AuthState.CurrentAuth?.ExpiresAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")" Mono="true" />
+                            <ProfileRow Label="Has Refresh Token" Value="@(!string.IsNullOrEmpty(AuthState.CurrentAuth?.IdpRefreshToken) ? "Yes" : "No")" />
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="col-12">
+            <div class="alert alert-warning">No authenticated user.</div>
+        </div>
+    }
+</div>

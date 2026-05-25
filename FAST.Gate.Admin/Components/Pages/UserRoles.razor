@@ -1,0 +1,102 @@
+@page "/user/roles"
+@inject FastAuthStateProvider AuthState
+
+<PageTitle>Roles &amp; Abilities — FAST.Gate Admin</PageTitle>
+
+<div class="row g-3">
+    <div class="col-12">
+        <h5 class="fw-semibold mb-1"><i class="bi bi-shield-check text-primary me-2"></i>Roles &amp; Abilities</h5>
+        <p class="text-muted small">Roles and abilities assigned to the current user.</p>
+    </div>
+
+    @{
+        var user = AuthState.CurrentAuth?.User;
+    }
+
+    <div class="col-lg-6">
+        <AppletCard Title="Roles" Icon="bi-shield-fill-check"
+                    Badge="@(user?.Roles.Count.ToString() ?? "0")" BadgeClass="bg-primary">
+            @if (user?.Roles.Any() == true)
+            {
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var role in user.Roles)
+                    {
+                        <span class="badge @RoleBadgeClass(role) px-3 py-2" style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;">
+                            @role
+                        </span>
+                    }
+                </div>
+
+                <hr class="my-3" />
+
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="small">Role</th>
+                            <th class="small">Prefix</th>
+                            <th class="small">App</th>
+                            <th class="small">Level</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var role in user.Roles)
+                        {
+                            var parts = role.Split('.');
+                            <tr>
+                                <td class="font-mono small">@role</td>
+                                <td><span class="badge bg-secondary-subtle text-secondary border">@parts[0]</span></td>
+                                <td class="small">@(parts.Length > 1 ? parts[1] : "—")</td>
+                                <td class="small">@(parts.Length > 2 ? parts[2] : "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p class="text-muted small mb-0">No roles assigned.</p>
+            }
+        </AppletCard>
+    </div>
+
+    <div class="col-lg-6">
+        <AppletCard Title="Abilities" Icon="bi-lightning-charge"
+                    Badge="@(user?.Abilities.Count.ToString() ?? "0")" BadgeClass="bg-warning text-dark">
+            @if (user?.Abilities.Any() == true)
+            {
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var ability in user.Abilities)
+                    {
+                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2"
+                              style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;">
+                            @ability
+                        </span>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-muted small">
+                    <i class="bi bi-info-circle me-1"></i>
+                    No abilities assigned yet. Abilities follow the convention
+                    <code>{app}.{resource}.{action}</code>
+                    (e.g. <code>erp.accounts.delete</code>) and will appear here once defined.
+                </div>
+            }
+        </AppletCard>
+    </div>
+</div>
+
+@code {
+    private static string RoleBadgeClass(string role)
+    {
+        var prefix = role.Split('.').FirstOrDefault() ?? "";
+        return prefix switch
+        {
+            "fast" => "bg-primary",
+            "erp"  => "bg-success",
+            "sys"  => "bg-danger",
+            _      => "bg-secondary",
+        };
+    }
+}

@@ -1,0 +1,115 @@
+@page "/system/health"
+@inject GateAuthClient GateAuth
+@inject OperationLogService OpLog
+@using System.Diagnostics
+@using System.Text.Json
+@inject GateSettingsService GateSettings
+@implements IDisposable
+
+<PageTitle>Health — FAST.Gate Admin</PageTitle>
+
+<div class="row g-3">
+    <div class="col-12">
+        <h5 class="fw-semibold mb-1"><i class="bi bi-heart-pulse text-primary me-2"></i>Gate Health</h5>
+        <p class="text-muted small">Calls <code>GET /health</code>. Auto-refreshes every 30 seconds.</p>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm text-center p-4">
+            <div class="mb-3">
+                @if (_loading)
+                {
+                    <div class="health-indicator health-checking">
+                        <span class="spinner-border text-primary"></span>
+                    </div>
+                }
+                else if (_isHealthy)
+                {
+                    <div class="health-indicator health-ok">
+                        <i class="bi bi-heart-pulse-fill text-success" style="font-size:2.5rem;"></i>
+                    </div>
+                }
+                else
+                {
+                    <div class="health-indicator health-fail">
+                        <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size:2.5rem;"></i>
+                    </div>
+                }
+            </div>
+            <h4 class="fw-semibold @(_isHealthy ? "text-success" : "text-danger")">
+                @(_loading ? "Checking..." : (_isHealthy ? "Healthy" : "Unhealthy"))
+            </h4>
+            @if (_lastCheck is not null)
+            {
+                <p class="text-muted small mb-1">Last checked: @_lastCheck.Value.ToLocalTime().ToString("HH:mm:ss")</p>
+                <p class="text-muted small mb-0">Latency: <strong>@_latencyMs ms</strong></p>
+            }
+            <button class="btn btn-outline-primary btn-sm mt-3" @onclick="CheckHealth" disabled="@_loading">
+                <i class="bi bi-arrow-clockwise me-1"></i>Check Now
+            </button>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <AppletCard Title="Raw Response" Icon="bi-code-slash">
+            @if (_resultJson is not null)
+            {
+                <JsonViewer Json="@_resultJson" />
+            }
+            else
+            {
+                <div class="text-muted small py-2">Waiting for first health check...</div>
+            }
+        </AppletCard>
+    </div>
+</div>
+
+@code {
+    private bool    _loading    = true;
+    private bool    _isHealthy;
+    private string? _resultJson;
+    private long    _latencyMs;
+    private DateTimeOffset? _lastCheck;
+    private System.Threading.Timer? _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckHealth();
+        _timer = new System.Threading.Timer(
+            async _ => { await CheckHealth(); await InvokeAsync(StateHasChanged); },
+            null,
+            TimeSpan.FromSeconds(30),
+            TimeSpan.FromSeconds(30));
+    }
+
+    private async Task CheckHealth()
+    {
+        _loading = true;
+        var sw   = Stopwatch.StartNew();
+        try
+        {
+            // Call /health via HttpClient directly since GateAuthClient doesn't expose it
+            var http     = new HttpClient { BaseAddress = new Uri(GateSettings.GateBaseUrl) };
+            var response = await http.GetAsync("/health");
+            sw.Stop();
+            _latencyMs  = sw.ElapsedMilliseconds;
+            _lastCheck  = DateTimeOffset.UtcNow;
+            _isHealthy  = response.IsSuccessStatusCode;
+            var body    = await response.Content.ReadAsStringAsync();
+            _resultJson = body;
+            OpLog.Log("GET", "/health", (int)response.StatusCode, _latencyMs, _isHealthy);
+        }
+        catch (Exception ex)
+        {
+            sw.Stop();
+            _latencyMs  = sw.ElapsedMilliseconds;
+            _lastCheck  = DateTimeOffset.UtcNow;
+            _isHealthy  = false;
+            _resultJson = JsonSerializer.Serialize(new { error = ex.Message });
+            OpLog.Log("GET", "/health", 0, _latencyMs, false, ex.Message);
+        }
+        finally { _loading = false; }
+    }
+
+    public void Dispose() => _timer?.Dispose();
+}

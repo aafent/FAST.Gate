@@ -1,0 +1,60 @@
+@FAST.Gate_HostAddress = http://localhost:5044
+#@RedirectUri = https://2uaw9x.logto.app/oidc/callback
+@RedirectUri = https://webhook.site/44665de5-6810-4108-a361-3b89080ddf4f
+
+### Health check
+GET {{FAST.Gate_HostAddress}}/health
+Accept: application/json
+
+###
+
+### Step 1 — Get SSO login URL, copy "url" from response and open in browser
+GET {{FAST.Gate_HostAddress}}/auth/sso/url?redirectUri={{RedirectUri}}
+Accept: application/json
+
+###
+
+### Step 2 — Exchange SSO code (paste "code" from browser URL bar after login)
+POST {{FAST.Gate_HostAddress}}/auth/sso/exchange
+Content-Type: application/json
+
+{
+  "code": "9-FcK-oNFbonXjUELI100dl_w8qA9mvbhS0SRs9s9K-",
+  "redirectUri": "{{RedirectUri}}"
+}
+
+###
+
+### Validate token
+GET {{FAST.Gate_HostAddress}}/auth/validate
+Authorization: Bearer eyJhbGciOiJFUzM4NCIsInR5cCI6ImF0K2p3dCIsImtpZCI6ImFLYU9HTDJmOFVma0g4dWZ5Y0RQUHRQS0F4OGFhNzlWbWotOUstd3MwZHMifQ.eyJqdGkiOiJHbGItalZQcWFkSDlVNGw5UU41MkMiLCJzdWIiOiJqa3ozeDdwenZjYnoiLCJpYXQiOjE3Nzk2MzgxNjEsImV4cCI6MTc3OTY0MTc2MSwic2NvcGUiOiIiLCJjbGllbnRfaWQiOiJuNHhhZmxqNjZpamMxY3NpbmZsajMiLCJpc3MiOiJodHRwczovLzJ1YXc5eC5sb2d0by5hcHAvb2lkYyIsImF1ZCI6Imh0dHBzOi8vZmFzdC5nYXRlLmludGVybmFsIn0.oFtqGPxotr_GrbytUwI3e-SgpDpFxsPR4q3AcRmC2oy8aba7gErYCI93AA6DL-EQ4MKn4GRDaKxLlhINfRP6TfQ4JZM6nSn3MOqRLkLkBktdF8FKH2GuZaTEixeza2Hb
+
+
+###
+
+### Get current user profile
+GET {{FAST.Gate_HostAddress}}/auth/me
+Authorization: Bearer eyJhbGciOiJFUzM4NCIsInR5cCI6ImF0K2p3dCIsImtpZCI6ImFLYU9HTDJmOFVma0g4dWZ5Y0RQUHRQS0F4OGFhNzlWbWotOUstd3MwZHMifQ.eyJqdGkiOiJHbGItalZQcWFkSDlVNGw5UU41MkMiLCJzdWIiOiJqa3ozeDdwenZjYnoiLCJpYXQiOjE3Nzk2MzgxNjEsImV4cCI6MTc3OTY0MTc2MSwic2NvcGUiOiIiLCJjbGllbnRfaWQiOiJuNHhhZmxqNjZpamMxY3NpbmZsajMiLCJpc3MiOiJodHRwczovLzJ1YXc5eC5sb2d0by5hcHAvb2lkYyIsImF1ZCI6Imh0dHBzOi8vZmFzdC5nYXRlLmludGVybmFsIn0.oFtqGPxotr_GrbytUwI3e-SgpDpFxsPR4q3AcRmC2oy8aba7gErYCI93AA6DL-EQ4MKn4GRDaKxLlhINfRP6TfQ4JZM6nSn3MOqRLkLkBktdF8FKH2GuZaTEixeza2Hb
+
+###
+
+### Refresh token
+POST {{FAST.Gate_HostAddress}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "oSHsT_eGTgb7gMbom2VUJFB5yBzQUoIttgxchgMDZjW"
+}
+
+###
+
+### Logout
+POST {{FAST.Gate_HostAddress}}/auth/logout
+Authorization: Bearer your-access-token
+Content-Type: application/json
+
+{
+  "refreshToken": "your-refresh-token"
+}
+
+###

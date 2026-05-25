@@ -1,0 +1,99 @@
+@page "/test/validate"
+@inject GateAuthClient GateAuth
+@inject FastAuthStateProvider AuthState
+@inject OperationLogService OpLog
+@using System.Diagnostics
+@using System.Text.Json
+
+<PageTitle>Validate Token — FAST.Gate Admin</PageTitle>
+
+<div class="row g-3">
+    <div class="col-12">
+        <h5 class="fw-semibold mb-1"><i class="bi bi-patch-check text-primary me-2"></i>Validate Token</h5>
+        <p class="text-muted small">Calls <code>GET /auth/validate</code> with a Bearer token. Pre-filled with your current session token.</p>
+    </div>
+
+    <div class="col-lg-5">
+        <AppletCard Title="Input" Icon="bi-input-cursor-text">
+            <div class="mb-3">
+                <label class="form-label small fw-medium">Access Token</label>
+                <textarea class="form-control font-mono small" rows="6" @bind="_token" placeholder="eyJhbGci..."></textarea>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary btn-sm" @onclick="Validate" disabled="@_loading">
+                    @if (_loading) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    <i class="bi bi-play-fill me-1"></i>Validate
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="UseCurrentToken">
+                    <i class="bi bi-lightning me-1"></i>Use current token
+                </button>
+            </div>
+        </AppletCard>
+    </div>
+
+    <div class="col-lg-7">
+        <AppletCard Title="Result" Icon="bi-card-list"
+                    Badge="@_badge" BadgeClass="@_badgeClass">
+            @if (_resultJson is not null)
+            {
+                <JsonViewer Json="@_resultJson" />
+            }
+            else if (_loading)
+            {
+                <div class="text-center text-muted py-4 small">
+                    <span class="spinner-border spinner-border-sm me-2"></span>Validating...
+                </div>
+            }
+            else
+            {
+                <div class="text-muted small py-2">Run the request to see the result.</div>
+            }
+        </AppletCard>
+    </div>
+</div>
+
+@code {
+    private string  _token      = "";
+    private string? _resultJson;
+    private bool    _loading;
+    private string? _badge;
+    private string  _badgeClass = "bg-secondary";
+
+    protected override void OnInitialized()
+    {
+        _token = AuthState.CurrentAuth?.IdpAccessToken ?? "";
+    }
+
+    private void UseCurrentToken()
+    {
+        _token = AuthState.CurrentAuth?.IdpAccessToken ?? "";
+    }
+
+    private async Task Validate()
+    {
+        if (string.IsNullOrWhiteSpace(_token)) return;
+        _loading    = true;
+        _resultJson = null;
+        _badge      = null;
+
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            var result = await GateAuth.ValidateTokenAsync(_token.Trim());
+            sw.Stop();
+            _resultJson = JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
+            _badge      = result.IsSuccess ? "VALID" : "INVALID";
+            _badgeClass = result.IsSuccess ? "bg-success" : "bg-danger";
+            OpLog.Log("GET", "/auth/validate", result.IsSuccess ? 200 : 401, sw.ElapsedMilliseconds, result.IsSuccess);
+        }
+        catch (Exception ex)
+        {
+            sw.Stop();
+            _badge      = "ERROR";
+            _badgeClass = "bg-danger";
+            _resultJson = JsonSerializer.Serialize(new { error = ex.Message });
+            OpLog.Log("GET", "/auth/validate", 0, sw.ElapsedMilliseconds, false, ex.Message);
+        }
+        finally { _loading = false; }
+    }
+}

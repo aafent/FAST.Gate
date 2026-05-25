@@ -1,0 +1,177 @@
+@page "/auth/callback"
+@layout EmptyLayout
+@inject GateAuthClient GateAuth
+@inject FastAuthStateProvider AuthState
+@inject NavigationManager Nav
+@inject OperationLogService OpLog
+@using Microsoft.AspNetCore.WebUtilities
+@using System.Text.Json
+@using System.Diagnostics
+
+<PageTitle>SSO Callback — FAST.Gate Admin</PageTitle>
+
+<div class="container-fluid px-4 py-4">
+    <h5 class="fw-semibold mb-4">
+        <i class="bi bi-arrow-left-right text-primary me-2"></i>SSO Callback
+    </h5>
+
+    <!-- URL Parameters Table -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header py-2">
+            <span class="small fw-semibold">Callback URL Parameters</span>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-sm table-hover mb-0 font-mono small">
+                <thead class="table-light">
+                    <tr>
+                        <th class="px-3 py-2">Parameter</th>
+                        <th class="px-3 py-2">Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var param in _params)
+                    {
+                        <tr>
+                            <td class="px-3 py-2 fw-medium text-primary">@param.Key</td>
+                            <td class="px-3 py-2 text-break">
+                                @if (param.Key == "code")
+                                {
+                                    <span class="text-success">@param.Value</span>
+                                    <button class="btn btn-link btn-sm p-0 ms-2" @onclick="() => CopyToClipboard(param.Value)" title="Copy code">
+                                        <i class="bi bi-clipboard small text-muted"></i>
+                                    </button>
+                                }
+                                else
+                                {
+                                    @param.Value
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Exchange Result -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header py-2 d-flex align-items-center justify-content-between">
+            <span class="small fw-semibold">Exchange Result — POST /auth/sso/exchange</span>
+            @if (_exchanging)
+            {
+                <span class="spinner-border spinner-border-sm text-primary"></span>
+            }
+            else if (_result is not null)
+            {
+                <span class="badge @(_result.IsSuccess ? "bg-success" : "bg-danger")">
+                    @(_result.IsSuccess ? "SUCCESS" : "FAILED")
+                </span>
+            }
+        </div>
+        <div class="card-body p-0">
+            @if (_resultJson is not null)
+            {
+                <JsonViewer Json="@_resultJson" />
+            }
+            else if (_exchanging)
+            {
+                <div class="p-4 text-center text-muted small">
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                    Exchanging authorization code...
+                </div>
+            }
+            else if (_error is not null)
+            {
+                <div class="alert alert-danger m-3">@_error</div>
+            }
+        </div>
+    </div>
+
+    @if (_result?.IsSuccess == true)
+    {
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary" @onclick="GoToDashboard">
+                <i class="bi bi-grid me-2"></i>Go to Dashboard
+            </button>
+        </div>
+    }
+    else if (!_exchanging && _result?.IsSuccess != true)
+    {
+        <button class="btn btn-outline-secondary" @onclick='() => Nav.NavigateTo("/login")'>
+            <i class="bi bi-arrow-left me-2"></i>Back to Login
+        </button>
+    }
+</div>
+
+@code {
+    private Dictionary<string, string> _params = [];
+    private FastAuthResult? _result;
+    private string? _resultJson;
+    private string? _error;
+    private bool _exchanging = true;
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    private static readonly HashSet<string> _usedCodes = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var uri   = new Uri(Nav.Uri);
+        var query = QueryHelpers.ParseQuery(uri.Query);
+
+        _params = query.ToDictionary(k => k.Key, v => v.Value.ToString());
+
+        if (!query.TryGetValue("code", out var code) || string.IsNullOrWhiteSpace(code))
+        {
+            _exchanging = false;
+            _error      = "No authorization code found in the callback URL.";
+            OpLog.Log("POST", "/auth/sso/exchange", 400, 0, false, "missing code");
+            return;
+        }
+
+        // Guard against double-exchange (Blazor prerender calls OnInitializedAsync twice)
+        if (!_usedCodes.Add(code!))
+        {
+            _exchanging = false;
+            _error = "Authorization code already used. Please sign in again.";
+            return;
+        }
+
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            _result     = await GateAuth.ExchangeSsoCodeAsync(code!);
+            sw.Stop();
+            _resultJson = JsonSerializer.Serialize(_result, new JsonSerializerOptions { WriteIndented = true });
+
+            OpLog.Log("POST", "/auth/sso/exchange",
+                _result.IsSuccess ? 200 : 401,
+                sw.ElapsedMilliseconds,
+                _result.IsSuccess,
+                _result.IsSuccess ? _result.User?.LoginName : _result.Error?.Code);
+
+            if (_result.IsSuccess)
+                AuthState.NotifyAuthSuccess(_result);
+        }
+        catch (Exception ex)
+        {
+            sw.Stop();
+            _error = ex.Message;
+            OpLog.Log("POST", "/auth/sso/exchange", 0, sw.ElapsedMilliseconds, false, ex.Message);
+        }
+        finally
+        {
+            _exchanging = false;
+            StateHasChanged();
+        }
+    }
+
+    private void GoToDashboard() => Nav.NavigateTo("/");
+
+    private async Task CopyToClipboard(string text)
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+    }
+}

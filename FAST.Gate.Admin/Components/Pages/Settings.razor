@@ -1,0 +1,269 @@
+@page "/settings"
+@inject IConfiguration Config
+@using System.Text.Json
+@using System.Text.Json.Serialization
+
+<PageTitle>Settings Builder — FAST.Gate Admin</PageTitle>
+
+<div class="row g-3">
+    <div class="col-12">
+        <h5 class="fw-semibold mb-1"><i class="bi bi-gear text-primary me-2"></i>appsettings Builder</h5>
+        <p class="text-muted small">Configure FAST.Gate settings and preview the generated <code>appsettings.json</code>. Nothing is saved to disk — copy the output manually.</p>
+    </div>
+
+    <div class="col-lg-7">
+
+        <!-- Gate › Identity › Logto -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header py-2">
+                <span class="small fw-semibold font-mono text-primary">Gate › Identity › Logto</span>
+            </div>
+            <div class="card-body p-3">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <SettingsField Label="Provider" @bind-Value="_provider" HelpText="Identity provider. Currently only 'logto' is supported." />
+                    </div>
+                    <div class="col-12">
+                        <SettingsField Label="IssuerUrl" @bind-Value="_issuerUrl" HelpText="OIDC issuer URL e.g. https://2uaw9x.logto.app/oidc" />
+                    </div>
+                    <div class="col-12">
+                        <SettingsField Label="ApiBaseUrl" @bind-Value="_apiBaseUrl" HelpText="Logto tenant base URL e.g. https://2uaw9x.logto.app" />
+                    </div>
+                    <div class="col-12">
+                        <SettingsField Label="Audience" @bind-Value="_audience" HelpText="API resource identifier e.g. https://fast.gate.internal" />
+                    </div>
+                    <div class="col-md-6">
+                        <SettingsField Label="ServiceClientId" @bind-Value="_serviceClientId" HelpText="M2M app Client ID" />
+                    </div>
+                    <div class="col-md-6">
+                        <SettingsField Label="ServiceClientSecret" @bind-Value="_serviceClientSecret" IsMasked="true" HelpText="M2M app Client Secret" />
+                    </div>
+                    <div class="col-md-6">
+                        <SettingsField Label="WebClientId" @bind-Value="_webClientId" HelpText="Traditional Web app Client ID" />
+                    </div>
+                    <div class="col-md-6">
+                        <SettingsField Label="WebClientSecret" @bind-Value="_webClientSecret" IsMasked="true" HelpText="Traditional Web app Client Secret" />
+                    </div>
+                    <div class="col-md-6">
+                        <SettingsField Label="ServiceRedirectUri" @bind-Value="_serviceRedirectUri" HelpText="Registered redirect URI for the Web app" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gate › Cache -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header py-2">
+                <span class="small fw-semibold font-mono text-primary">Gate › Cache</span>
+            </div>
+            <div class="card-body p-3">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-medium">TokenCacheEnabled</label>
+                        <div class="form-check form-switch mt-1">
+                            <input class="form-check-input" type="checkbox" @bind="_tokenCacheEnabled" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <SettingsField Label="TokenCacheMaxSize" @bind-Value="_tokenCacheMaxSize" HelpText="Max cached tokens" />
+                    </div>
+                    <div class="col-md-4">
+                        <SettingsField Label="EarlyExpiryBufferMs" @bind-Value="_earlyExpiryBufferMs" HelpText="ms before exp to evict" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gate › SSO -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header py-2">
+                <span class="small fw-semibold font-mono text-primary">Gate › SSO › AllowedRedirectUris</span>
+            </div>
+            <div class="card-body p-3">
+                @for (int i = 0; i < _redirectUris.Count; i++)
+                {
+                    var idx = i;
+                    <div class="input-group input-group-sm mb-2">
+                        <input type="url" class="form-control font-mono small"
+                               value="@_redirectUris[idx]"
+                               @oninput="e => _redirectUris[idx] = e.Value?.ToString() ?? string.Empty" />
+                        <button class="btn btn-outline-danger" @onclick="() => _redirectUris.RemoveAt(idx)">
+                            <i class="bi bi-trash3 small"></i>
+                        </button>
+                    </div>
+                }
+                <button class="btn btn-outline-secondary btn-sm mt-1" @onclick='() => _redirectUris.Add(string.Empty)'>
+                    <i class="bi bi-plus me-1"></i>Add URI
+                </button>
+            </div>
+        </div>
+
+        <!-- Gate › Session -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header py-2">
+                <span class="small fw-semibold font-mono text-primary">Gate › Session</span>
+            </div>
+            <div class="card-body p-3">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <SettingsField Label="SessionLifetimeMinutes" @bind-Value="_sessionLifetimeMinutes" />
+                    </div>
+                    <div class="col-md-4">
+                        <SettingsField Label="RememberMeLifetimeDays" @bind-Value="_rememberMeLifetimeDays" />
+                    </div>
+                    <div class="col-md-4">
+                        <SettingsField Label="RefreshBufferSeconds" @bind-Value="_refreshBufferSeconds" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Preview Panel -->
+    <div class="col-lg-5">
+        <div class="card shadow-sm sticky-top" style="top:1rem;">
+            <div class="card-header py-2 d-flex align-items-center justify-content-between">
+                <span class="small fw-semibold">Generated appsettings.json</span>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary btn-sm" @onclick="GenerateJson">
+                        <i class="bi bi-play-fill me-1"></i>Preview
+                    </button>
+                    @if (_generatedJson is not null)
+                    {
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="CopyJson">
+                            <i class="bi @(_copied ? "bi-check2 text-success" : "bi-clipboard") me-1"></i>
+                            @(_copied ? "Copied!" : "Copy")
+                        </button>
+                    }
+                </div>
+            </div>
+            <div class="card-body p-0">
+                @if (_generatedJson is not null)
+                {
+                    <pre class="json-content mb-0" style="max-height:600px;overflow-y:auto;"><code>@_generatedJson</code></pre>
+                }
+                else
+                {
+                    <div class="p-4 text-center text-muted small">
+                        <i class="bi bi-file-code display-6 d-block mb-2 opacity-25"></i>
+                        Click <strong>Preview</strong> to generate the JSON.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Identity › Logto
+    private string _provider              = "logto";
+    private string _issuerUrl             = "";
+    private string _apiBaseUrl            = "";
+    private string _audience              = "";
+    private string _serviceClientId       = "";
+    private string _serviceClientSecret   = "";
+    private string _webClientId           = "";
+    private string _webClientSecret       = "";
+    private string _serviceRedirectUri    = "";
+
+    // Cache
+    private bool   _tokenCacheEnabled     = true;
+    private string _tokenCacheMaxSize     = "1000";
+    private string _earlyExpiryBufferMs   = "10000";
+
+    // SSO
+    private List<string> _redirectUris    = [""];
+
+    // Session
+    private string _sessionLifetimeMinutes = "60";
+    private string _rememberMeLifetimeDays  = "30";
+    private string _refreshBufferSeconds    = "60";
+
+    private string? _generatedJson;
+    private bool    _copied;
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        // Pre-fill from current config
+        _issuerUrl             = Config["Gate:Identity:Logto:IssuerUrl"]          ?? "";
+        _apiBaseUrl            = Config["Gate:Identity:Logto:ApiBaseUrl"]          ?? "";
+        _audience              = Config["Gate:Identity:Logto:Audience"]            ?? "";
+        _serviceClientId       = Config["Gate:Identity:Logto:ServiceClientId"]     ?? "";
+        _webClientId           = Config["Gate:Identity:Logto:WebClientId"]         ?? "";
+        _serviceRedirectUri    = Config["Gate:Identity:Logto:ServiceRedirectUri"]  ?? "";
+        _tokenCacheEnabled     = bool.TryParse(Config["Gate:Cache:TokenCacheEnabled"], out var tce) ? tce : true;
+        _tokenCacheMaxSize     = Config["Gate:Cache:TokenCacheMaxSize"]            ?? "1000";
+        _earlyExpiryBufferMs   = Config["Gate:Cache:TokenCacheEarlyExpiryBufferMs"] ?? "10000";
+        _sessionLifetimeMinutes = Config["Gate:Session:SessionLifetimeMinutes"]   ?? "60";
+        _rememberMeLifetimeDays = Config["Gate:Session:RememberMeLifetimeDays"]   ?? "30";
+        _refreshBufferSeconds   = Config["Gate:Session:RefreshBufferSeconds"]     ?? "60";
+
+        var uris = Config.GetSection("Gate:Sso:AllowedRedirectUris").GetChildren()
+            .Select(c => c.Value ?? "").ToList();
+        if (uris.Any()) _redirectUris = uris;
+    }
+
+    private void GenerateJson()
+    {
+        var obj = new
+        {
+            Gate = new
+            {
+                Identity = new
+                {
+                    Provider = _provider,
+                    Logto = new
+                    {
+                        IssuerUrl          = _issuerUrl,
+                        ApiBaseUrl         = _apiBaseUrl,
+                        Audience           = _audience,
+                        ServiceClientId    = _serviceClientId,
+                        ServiceClientSecret = _serviceClientSecret,
+                        WebClientId        = _webClientId,
+                        WebClientSecret    = _webClientSecret,
+                        ServiceRedirectUri = _serviceRedirectUri,
+                        JwksCacheTtlMs     = 600000,
+                        JwksFetchTimeoutMs = 3000,
+                        JwksRetryAttempts  = 3,
+                        JwksRetryDelayMs   = 500,
+                    }
+                },
+                Cache = new
+                {
+                    TokenCacheEnabled          = _tokenCacheEnabled,
+                    TokenCacheMaxSize          = int.TryParse(_tokenCacheMaxSize, out var tms) ? tms : 1000,
+                    TokenCacheEarlyExpiryBufferMs = int.TryParse(_earlyExpiryBufferMs, out var eeb) ? eeb : 10000,
+                },
+                Sso = new
+                {
+                    AllowedRedirectUris = _redirectUris.Where(u => !string.IsNullOrWhiteSpace(u)).ToList(),
+                },
+                Session = new
+                {
+                    SessionLifetimeMinutes = int.TryParse(_sessionLifetimeMinutes, out var slm) ? slm : 60,
+                    RememberMeLifetimeDays  = int.TryParse(_rememberMeLifetimeDays, out var rml) ? rml : 30,
+                    RefreshBufferSeconds    = int.TryParse(_refreshBufferSeconds, out var rbs) ? rbs : 60,
+                }
+            }
+        };
+
+        _generatedJson = JsonSerializer.Serialize(obj, new JsonSerializerOptions
+        {
+            WriteIndented   = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.Never,
+        });
+    }
+
+    private async Task CopyJson()
+    {
+        if (_generatedJson is null) return;
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", _generatedJson);
+        _copied = true;
+        await Task.Delay(1500);
+        _copied = false;
+        StateHasChanged();
+    }
+}

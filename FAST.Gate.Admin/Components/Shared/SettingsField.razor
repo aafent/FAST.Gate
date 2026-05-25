@@ -1,0 +1,40 @@
+<div class="settings-field">
+    <label class="form-label small fw-medium font-mono">@Label</label>
+    <div class="input-group input-group-sm">
+        <input type="@InputType"
+               class="form-control font-mono small"
+               value="@Value"
+               @oninput="OnInput"
+               placeholder="@(IsMasked ? "••••••••" : "")" />
+        @if (IsMasked)
+        {
+            <button type="button" class="btn btn-outline-secondary" @onclick="ToggleVisibility" title="@(ShowPlain ? "Hide" : "Show")">
+                <i class="bi @(ShowPlain ? "bi-eye-slash" : "bi-eye") small"></i>
+            </button>
+        }
+    </div>
+    @if (!string.IsNullOrEmpty(HelpText))
+    {
+        <div class="form-text" style="font-size:0.7rem;">@HelpText</div>
+    }
+</div>
+
+@code {
+    [Parameter] public string  Label    { get; set; } = "";
+    [Parameter] public string  Value    { get; set; } = "";
+    [Parameter] public bool    IsMasked { get; set; }
+    [Parameter] public string? HelpText { get; set; }
+
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+
+    private bool ShowPlain;
+
+    private string InputType => (IsMasked && !ShowPlain) ? "password" : "text";
+
+    private void ToggleVisibility() => ShowPlain = !ShowPlain;
+
+    private async Task OnInput(ChangeEventArgs e)
+    {
+        await ValueChanged.InvokeAsync(e.Value?.ToString() ?? "");
+    }
+}

@@ -1,0 +1,65 @@
+@inject OperationLogService OpLog
+@implements IDisposable
+
+<div class="op-log-panel border-top bg-body-secondary">
+    <div class="op-log-header d-flex align-items-center justify-content-between px-3 py-2">
+        <span class="text-muted small fw-semibold" style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;letter-spacing:0.08em;">
+            OPERATION LOG
+        </span>
+        <div class="d-flex align-items-center gap-3">
+            <span class="badge bg-secondary">@OpLog.Entries.Count</span>
+            <button class="btn btn-link btn-sm text-muted p-0" @onclick="OpLog.Clear" title="Clear log">
+                <i class="bi bi-trash3 small"></i>
+            </button>
+        </div>
+    </div>
+    <div class="op-log-body">
+        @foreach (var entry in OpLog.Entries.Take(50))
+        {
+            <div class="op-log-entry d-flex align-items-center gap-3 px-3 py-1 @(entry.IsSuccess ? "" : "op-log-error")">
+                <span class="op-log-time">@entry.TimeDisplay</span>
+                <span class="op-log-method badge @MethodBadge(entry.Method)">@entry.Method</span>
+                <span class="op-log-endpoint">@entry.Endpoint</span>
+                <span class="op-log-status @(entry.IsSuccess ? "text-success" : "text-danger")">
+                    @entry.StatusDisplay
+                </span>
+                <span class="op-log-elapsed text-muted">@entry.ElapsedMs ms</span>
+                @if (!string.IsNullOrEmpty(entry.Detail))
+                {
+                    <span class="op-log-detail text-muted">— @entry.Detail</span>
+                }
+            </div>
+        }
+        @if (!OpLog.Entries.Any())
+        {
+            <div class="px-3 py-2 text-muted small" style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;">
+                No operations yet.
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        OpLog.OnChanged += OnLogChanged;
+    }
+
+    private void OnLogChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        OpLog.OnChanged -= OnLogChanged;
+    }
+
+    private static string MethodBadge(string method) => method.ToUpper() switch
+    {
+        "GET"    => "bg-info text-dark",
+        "POST"   => "bg-primary",
+        "DELETE" => "bg-danger",
+        _        => "bg-secondary",
+    };
+}

@@ -1,0 +1,38 @@
+# Build outputs
+bin/
+obj/
+publish/
+
+# .NET
+*.user
+*.suo
+.vs/
+.vscode/
+*.DotSettings
+
+# Secrets — NEVER commit
+.env
+*.pfx
+*.p12
+secrets.json
+appsettings.Local.json
+
+# Test results
+TestResults/
+coverage/
+*.trx
+*.coveragexml
+
+# Docker
+.dockerignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# NuGet
+*.nupkg
+nuget.config
+
+# FAST
+LocalOnly/

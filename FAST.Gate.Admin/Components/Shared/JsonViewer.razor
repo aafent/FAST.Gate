@@ -1,0 +1,49 @@
+@using System.Text.Json
+
+<div class="json-viewer @(Compact ? "json-compact" : "")">
+    <div class="json-viewer-header d-flex align-items-center justify-content-between px-3 py-2">
+        @if (!string.IsNullOrEmpty(Title))
+        {
+            <span class="small fw-semibold text-muted" style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;letter-spacing:0.05em;">
+                @Title.ToUpper()
+            </span>
+        }
+        <button class="btn btn-link btn-sm p-0 text-muted ms-auto" @onclick="CopyJson" title="Copy JSON">
+            <i class="bi @(_copied ? "bi-check2 text-success" : "bi-clipboard") small"></i>
+        </button>
+    </div>
+    <pre class="json-content mb-0"><code>@PrettyJson</code></pre>
+</div>
+
+@code {
+    [Parameter] public string? Json    { get; set; }
+    [Parameter] public string? Title   { get; set; }
+    [Parameter] public bool    Compact { get; set; }
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    private bool _copied;
+
+    private string PrettyJson
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(Json)) return "—";
+            try
+            {
+                var doc = JsonDocument.Parse(Json);
+                return JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true });
+            }
+            catch { return Json; }
+        }
+    }
+
+    private async Task CopyJson()
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", PrettyJson);
+        _copied = true;
+        await Task.Delay(1500);
+        _copied = false;
+        StateHasChanged();
+    }
+}

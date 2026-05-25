@@ -1,0 +1,9 @@
+<tr>
+    <td class="px-3 py-2 text-muted small fw-medium" style="width:200px;font-family:'JetBrains Mono',monospace;font-size:0.75rem;">@Key</td>
+    <td class="px-3 py-2 small font-mono">@(Value ?? "—")</td>
+</tr>
+
+@code {
+    [Parameter] public string  Key   { get; set; } = "";
+    [Parameter] public string? Value { get; set; }
+}

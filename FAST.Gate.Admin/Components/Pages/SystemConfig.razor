@@ -1,0 +1,48 @@
+@page "/system/config"
+@inject IConfiguration Config
+@inject GateSettingsService GateSettings
+
+<PageTitle>Configuration — FAST.Gate Admin</PageTitle>
+
+<div class="row g-3">
+    <div class="col-12">
+        <h5 class="fw-semibold mb-1"><i class="bi bi-sliders text-primary me-2"></i>Runtime Configuration</h5>
+        <p class="text-muted small">Current effective configuration. Secrets are masked.</p>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header py-2">
+                <span class="small fw-semibold">FastGate Client</span>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <ConfigRow Key="GateBaseUrl"              Value="@GateSettings.GateBaseUrl" />
+                        <ConfigRow Key="SsoRedirectUri"           Value="@GateSettings.SsoRedirectUri" />
+                        <ConfigRow Key="TokenRefreshBufferSeconds" Value="@Config["FastGate:TokenRefreshBufferSeconds"]" />
+                        <ConfigRow Key="TimeoutMs"                Value="@Config["FastGate:TimeoutMs"]" />
+                        <ConfigRow Key="PropagateCorrelationId"   Value="@Config["FastGate:PropagateCorrelationId"]" />
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header py-2">
+                <span class="small fw-semibold">Environment</span>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <ConfigRow Key="ASPNETCORE_ENVIRONMENT" Value="@(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production")" />
+                        <ConfigRow Key=".NET Version"           Value="@System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription" />
+                        <ConfigRow Key="Machine"                Value="@Environment.MachineName" />
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

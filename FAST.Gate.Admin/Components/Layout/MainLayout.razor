@@ -1,0 +1,153 @@
+@inherits LayoutComponentBase
+@inject FastAuthStateProvider AuthState
+@inject NavigationManager Nav
+@inject GateAuthClient GateAuth
+@implements IDisposable
+
+@if (!_ready)
+{
+    <div class="d-flex align-items-center justify-content-center min-vh-100">
+        <div class="text-center text-muted">
+            <div class="spinner-border text-primary mb-3"></div>
+            <p class="small">Loading...</p>
+        </div>
+    </div>
+}
+else if (!_isAuthenticated)
+{
+    @Body
+}
+else
+{
+    <!-- Top Navbar -->
+    <nav class="app-header navbar navbar-expand bg-white border-bottom shadow-sm" style="position:fixed;top:0;left:0;right:0;z-index:1030;height:56px;">
+        <div class="container-fluid px-3">
+            <button class="btn btn-link text-dark p-1 me-2" id="sidebar-toggle" @onclick="ToggleSidebar">
+                <i class="bi bi-list fs-5"></i>
+            </button>
+
+            <span class="fw-bold me-auto" style="font-family:'JetBrains Mono',monospace;font-size:0.88rem;">
+                <span style="color:#3d8bfd;">FAST</span><span class="text-muted">.Gate</span>
+                <span class="badge bg-danger ms-1" style="font-size:0.52rem;vertical-align:middle;letter-spacing:0.05em;">ADMIN</span>
+            </span>
+
+            <div class="dropdown">
+                <button class="btn btn-link text-dark dropdown-toggle d-flex align-items-center gap-2 text-decoration-none" data-bs-toggle="dropdown">
+                    <div class="avatar-circle">@_userInitial</div>
+                    <span class="d-none d-md-inline small fw-medium text-dark">@_userName</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                    <li><span class="dropdown-item-text small text-muted">@_userEmail</span></li>
+                    <li><hr class="dropdown-divider" /></li>
+                    <li>
+                        <button class="dropdown-item text-danger" @onclick="LogoutAsync">
+                            <i class="bi bi-box-arrow-right me-2"></i>Sign out
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="@SidebarClass" style="position:fixed;top:56px;left:0;bottom:@($"{_logHeight}px");width:240px;background:#1a1f2e;z-index:1020;overflow-y:auto;transition:transform 0.25s ease;">
+        <nav class="py-2 px-2">
+
+            <div class="nav-section-label">TEST</div>
+            <NavLink class="sidebar-link" href="test/sso-flow"><i class="bi bi-arrow-repeat"></i><span>SSO Flow</span></NavLink>
+            <NavLink class="sidebar-link" href="test/validate"><i class="bi bi-patch-check"></i><span>Validate Token</span></NavLink>
+            <NavLink class="sidebar-link" href="test/refresh"><i class="bi bi-arrow-clockwise"></i><span>Refresh Token</span></NavLink>
+            <NavLink class="sidebar-link" href="test/me"><i class="bi bi-person-badge"></i><span>Me</span></NavLink>
+
+            <div class="nav-section-label mt-3">USER</div>
+            <NavLink class="sidebar-link" href="user/profile"><i class="bi bi-person-circle"></i><span>Profile</span></NavLink>
+            <NavLink class="sidebar-link" href="user/roles"><i class="bi bi-shield-check"></i><span>Roles &amp; Abilities</span></NavLink>
+
+            <div class="nav-section-label mt-3">SYSTEM</div>
+            <NavLink class="sidebar-link" href="system/health"><i class="bi bi-heart-pulse"></i><span>Health</span></NavLink>
+            <NavLink class="sidebar-link" href="system/config"><i class="bi bi-sliders"></i><span>Configuration</span></NavLink>
+
+            <div class="nav-section-label mt-3">SETTINGS</div>
+            <NavLink class="sidebar-link" href="settings"><i class="bi bi-gear"></i><span>appsettings Builder</span></NavLink>
+
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main style="margin-left:@(_sidebarOpen ? "240px" : "0");margin-top:56px;padding-bottom:@($"{_logHeight + 16}px");transition:margin-left 0.25s ease;min-height:calc(100vh - 56px);">
+        <div class="container-fluid px-4 py-3">
+            @Body
+        </div>
+    </main>
+
+    <!-- Operation Log Footer -->
+    <div style="position:fixed;bottom:0;left:@(_sidebarOpen ? "240px" : "0");right:0;transition:left 0.25s ease;z-index:1010;">
+        <OperationLogPanel />
+    </div>
+}
+
+@code {
+    private bool   _ready           = false;
+    private bool   _isAuthenticated = false;
+    private bool   _sidebarOpen     = true;
+    private int    _logHeight       = 160;
+    private string _userInitial     = "?";
+    private string _userName        = "";
+    private string _userEmail       = "";
+
+    private string SidebarClass => _sidebarOpen ? "sidebar-visible" : "sidebar-hidden";
+
+    protected override async Task OnInitializedAsync()
+    {
+        AuthState.AuthenticationStateChanged += OnAuthStateChanged;
+
+        var auth = AuthState.CurrentAuth;
+        _isAuthenticated = auth?.IsSuccess == true && auth.User is not null
+                           && auth.ExpiresAt.HasValue
+                           && DateTimeOffset.UtcNow < auth.ExpiresAt.Value;
+
+        if (_isAuthenticated) PopulateUser(auth!.User!);
+
+        _ready = true;
+
+        if (!_isAuthenticated)
+        {
+            var uri = Nav.Uri;
+            if (!uri.Contains("/login") && !uri.Contains("/auth/callback"))
+                Nav.NavigateTo("/login");
+        }
+    }
+
+    private void OnAuthStateChanged(Task<AuthenticationState> _)
+    {
+        var auth = AuthState.CurrentAuth;
+        _isAuthenticated = auth?.IsSuccess == true && auth.User is not null
+                           && auth.ExpiresAt.HasValue
+                           && DateTimeOffset.UtcNow < auth.ExpiresAt.Value;
+        if (_isAuthenticated) PopulateUser(auth!.User!);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void PopulateUser(UserProfile user)
+    {
+        _userName    = user.DisplayName;
+        _userEmail   = user.Email;
+        _userInitial = string.IsNullOrEmpty(user.FirstName) ? "?" : user.FirstName[0].ToString().ToUpper();
+    }
+
+    private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
+
+    private async Task LogoutAsync()
+    {
+        var auth = AuthState.CurrentAuth;
+        if (auth is not null)
+            await GateAuth.LogoutAsync(auth.IdpAccessToken ?? "", auth.IdpRefreshToken);
+        AuthState.NotifyLogout();
+        Nav.NavigateTo("/login", forceLoad: true);
+    }
+
+    public void Dispose()
+    {
+        AuthState.AuthenticationStateChanged -= OnAuthStateChanged;
+    }
+}

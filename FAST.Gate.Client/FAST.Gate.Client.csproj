@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>FAST.Gate.Client</RootNamespace>
+    <AssemblyName>FAST.Gate.Client</AssemblyName>
+    <PackageId>FAST.Gate.Client</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>FAST Team</Authors>
+    <Description>Client SDK for FAST.Gate — authentication and authorization provider for the FAST ecosystem.</Description>
+    <PackageTags>fast gate auth sso blazor</PackageTags>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <Title>Client to the FAST.Gate Authorization/Authentication/SSO Service of the FAST ecosystem</Title>
+    <Copyright>GCS EOOD, ALRoyalties</Copyright>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+  </ItemGroup>
+</Project>

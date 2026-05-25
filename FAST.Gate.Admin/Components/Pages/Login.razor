@@ -1,0 +1,176 @@
+@page "/login"
+@layout EmptyLayout
+@inject GateAuthClient GateAuth
+@inject NavigationManager Nav
+@inject GateSettingsService GateSettings
+
+<PageTitle>Sign In — FAST.Gate Admin</PageTitle>
+
+<div class="login-wrapper d-flex align-items-center justify-content-center min-vh-100">
+    <div class="login-card">
+        <div class="text-center mb-4">
+            <div class="login-logo mb-3">
+                <i class="bi bi-shield-lock-fill" style="font-size:2rem;color:white;"></i>
+            </div>
+            <h4 class="fw-semibold mb-1">
+                <span class="text-primary">FAST</span>.Gate Admin
+            </h4>
+            <p class="text-muted small">Authentication &amp; Authorization Console</p>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+
+                <div class="mb-3">
+                    <label class="form-label small fw-medium">Gate Service URL</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text"><i class="bi bi-hdd-network"></i></span>
+                        <input type="text" class="form-control font-mono"
+                               @bind="_gateUrl"
+                               placeholder="http://localhost:5044" />
+                    </div>
+                    <div class="form-text">Base URL of the running FAST.Gate service.</div>
+                </div>
+
+                @if (_error is not null)
+                {
+                    <div class="alert alert-danger py-2 small">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>@_error
+                    </div>
+                }
+
+                @if (_loading)
+                {
+                    <div class="login-progress mt-3">
+                        <div class="login-progress-steps">
+                            <div class="login-step @StepClass(1)">
+                                <div class="login-step-icon">
+                                    @if (_step > 1) { <i class="bi bi-check-lg"></i> }
+                                    else if (_step == 1) { <span class="spinner-border spinner-border-sm"></span> }
+                                    else { <span>1</span> }
+                                </div>
+                                <span>Contacting FAST.Gate</span>
+                            </div>
+                            <div class="login-step-connector"></div>
+                            <div class="login-step @StepClass(2)">
+                                <div class="login-step-icon">
+                                    @if (_step > 2) { <i class="bi bi-check-lg"></i> }
+                                    else if (_step == 2) { <span class="spinner-border spinner-border-sm"></span> }
+                                    else { <span>2</span> }
+                                </div>
+                                <span>Redirecting to Logto</span>
+                            </div>
+                        </div>
+                        <p class="text-muted small text-center mt-2 mb-0">@_statusMessage</p>
+                    </div>
+                }
+
+                <button class="btn btn-primary w-100 mt-3" @onclick="StartSso"
+                        disabled="@_loading" style="transition:all 0.2s;">
+                    @if (_loading)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        <span>@_statusMessage</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-box-arrow-in-right me-2"></i>
+                        <span>Sign in with SSO</span>
+                    }
+                </button>
+
+            </div>
+        </div>
+
+        <p class="text-center text-muted mt-3"
+           style="font-size:0.7rem;font-family:'JetBrains Mono',monospace;">
+            FAST.Gate Admin v1.0 · @GateSettings.GateBaseUrl
+        </p>
+    </div>
+</div>
+
+<style>
+.login-progress-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.login-step {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: #adb5bd;
+    transition: color 0.3s;
+}
+.login-step.active { color: #3d8bfd; font-weight: 500; }
+.login-step.done   { color: #198754; }
+.login-step-icon {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #e9ecef;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem;
+    transition: background 0.3s;
+}
+.login-step.active .login-step-icon { background: #3d8bfd; color: white; }
+.login-step.done   .login-step-icon { background: #198754; color: white; }
+.login-step-connector {
+    width: 30px; height: 2px;
+    background: #dee2e6;
+    border-radius: 2px;
+}
+</style>
+
+@code {
+    private string  _gateUrl       = "";
+    private bool    _loading;
+    private string? _error;
+    private int     _step          = 0;
+    private string  _statusMessage = "";
+
+    protected override void OnInitialized()
+    {
+        _gateUrl = GateSettings.GateBaseUrl;
+    }
+
+    private string StepClass(int step) =>
+        _step > step ? "done" : _step == step ? "active" : "";
+
+    private async Task StartSso()
+    {
+        if (string.IsNullOrWhiteSpace(_gateUrl))
+        {
+            _error = "Gate URL is required.";
+            return;
+        }
+
+        _loading       = true;
+        _error         = null;
+        _step          = 1;
+        _statusMessage = "Contacting FAST.Gate...";
+        StateHasChanged();
+        await Task.Delay(50); // allow render to flush
+
+        try
+        {
+            var ssoUrl = await GateAuth.GetSsoLoginUrlAsync();
+
+            _step          = 2;
+            _statusMessage = "Redirecting to Logto...";
+            StateHasChanged();
+            await Task.Delay(300); // brief pause so user sees step 2
+
+            Nav.NavigateTo(ssoUrl, forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            _error         = $"Could not reach FAST.Gate: {ex.Message}";
+            _loading       = false;
+            _step          = 0;
+            _statusMessage = "";
+        }
+    }
+}

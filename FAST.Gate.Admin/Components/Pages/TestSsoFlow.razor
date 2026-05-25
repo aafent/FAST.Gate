@@ -1,0 +1,101 @@
+@page "/test/sso-flow"
+@inject GateAuthClient GateAuth
+@inject NavigationManager Nav
+@inject OperationLogService OpLog
+@inject FastAuthStateProvider AuthState
+@using System.Diagnostics
+
+<PageTitle>SSO Flow — FAST.Gate Admin</PageTitle>
+
+<div class="row g-3">
+    <div class="col-12">
+        <h5 class="fw-semibold mb-1"><i class="bi bi-arrow-repeat text-primary me-2"></i>SSO Flow</h5>
+        <p class="text-muted small">Trigger a full SSO authorization code flow. Step 1 generates the Logto URL; Step 2 is handled at /auth/callback.</p>
+    </div>
+
+    <div class="col-lg-6">
+        <AppletCard Title="Step 1 — Get SSO URL" Icon="bi-link-45deg">
+            <p class="small text-muted mb-3">Calls <code>GET /auth/sso/url</code> and returns the Logto authorization URL.</p>
+
+            <button class="btn btn-primary btn-sm" @onclick="GetSsoUrl" disabled="@_loadingUrl">
+                @if (_loadingUrl) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                <i class="bi bi-play-fill me-1"></i>Generate SSO URL
+            </button>
+
+            @if (_ssoUrl is not null)
+            {
+                <div class="mt-3">
+                    <label class="form-label small fw-medium">Authorization URL</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control font-mono small" readonly value="@_ssoUrl" />
+                        <button class="btn btn-outline-secondary" @onclick="CopySsoUrl" title="Copy">
+                            <i class="bi @(_copiedUrl ? "bi-check2 text-success" : "bi-clipboard")"></i>
+                        </button>
+                    </div>
+                    <div class="mt-2">
+                        <a href="@_ssoUrl" class="btn btn-success btn-sm" target="_blank">
+                            <i class="bi bi-box-arrow-up-right me-1"></i>Open in Logto
+                        </a>
+                    </div>
+                </div>
+            }
+        </AppletCard>
+    </div>
+
+    <div class="col-lg-6">
+        <AppletCard Title="Step 2 — Current Auth Result" Icon="bi-check-circle">
+            <p class="small text-muted mb-3">The result from the last <code>POST /auth/sso/exchange</code>. This is populated automatically when you complete the SSO flow.</p>
+
+            @if (AuthState.CurrentAuth is { IsSuccess: true } auth)
+            {
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="badge bg-success">Authenticated</span>
+                    <span class="small text-muted">as <strong>@auth.User?.LoginName</strong></span>
+                </div>
+                <JsonViewer Json="@System.Text.Json.JsonSerializer.Serialize(auth, new System.Text.Json.JsonSerializerOptions { WriteIndented = true })" Title="FastAuthResult" />
+            }
+            else
+            {
+                <div class="alert alert-secondary py-2 small">
+                    No active session. Complete the SSO flow above to see the result here.
+                </div>
+            }
+        </AppletCard>
+    </div>
+</div>
+
+@code {
+    private string? _ssoUrl;
+    private bool    _loadingUrl;
+    private bool    _copiedUrl;
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    private async Task GetSsoUrl()
+    {
+        _loadingUrl = true;
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            _ssoUrl = await GateAuth.GetSsoLoginUrlAsync();
+            sw.Stop();
+            OpLog.Log("GET", "/auth/sso/url", 200, sw.ElapsedMilliseconds, true);
+        }
+        catch (Exception ex)
+        {
+            sw.Stop();
+            OpLog.Log("GET", "/auth/sso/url", 0, sw.ElapsedMilliseconds, false, ex.Message);
+        }
+        finally { _loadingUrl = false; }
+    }
+
+    private async Task CopySsoUrl()
+    {
+        if (_ssoUrl is null) return;
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", _ssoUrl);
+        _copiedUrl = true;
+        await Task.Delay(1500);
+        _copiedUrl = false;
+        StateHasChanged();
+    }
+}

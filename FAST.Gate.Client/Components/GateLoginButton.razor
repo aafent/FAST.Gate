@@ -1,0 +1,50 @@
+@inject GateAuthClient GateAuth
+@inject NavigationManager Nav
+@using FAST.Gate.Client.Auth
+
+<button class="@CssClass" @onclick="StartLogin" disabled="@_loading">
+    @if (_loading)
+    {
+        <span>Redirecting...</span>
+    }
+    else
+    {
+        <span>@Text</span>
+    }
+</button>
+
+@if (_error is not null)
+{
+    <p style="color:red">@_error</p>
+}
+
+@code {
+    /// <summary>Button label. Default: "Sign in".</summary>
+    [Parameter] public string Text { get; set; } = "Sign in";
+
+    /// <summary>CSS class on the button. Default: "btn btn-primary".</summary>
+    [Parameter] public string CssClass { get; set; } = "btn btn-primary";
+
+    /// <summary>Tenant ID for multi-tenant scenarios. Leave null for single-tenant.</summary>
+    [Parameter] public string? TenantId { get; set; }
+
+    private bool _loading;
+    private string? _error;
+
+    private async Task StartLogin()
+    {
+        _loading = true;
+        _error = null;
+
+        try
+        {
+            var ssoUrl = await GateAuth.GetSsoLoginUrlAsync(TenantId);
+            Nav.NavigateTo(ssoUrl, forceLoad: true);
+        }
+        catch
+        {
+            _error = "Could not start login. Please try again.";
+            _loading = false;
+        }
+    }
+}

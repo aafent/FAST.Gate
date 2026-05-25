@@ -1,0 +1,115 @@
+@page "/test/refresh"
+@inject GateAuthClient GateAuth
+@inject FastAuthStateProvider AuthState
+@inject OperationLogService OpLog
+@using System.Diagnostics
+@using System.Text.Json
+
+<PageTitle>Refresh Token — FAST.Gate Admin</PageTitle>
+
+<div class="row g-3">
+    <div class="col-12">
+        <h5 class="fw-semibold mb-1"><i class="bi bi-arrow-clockwise text-primary me-2"></i>Refresh Token</h5>
+        <p class="text-muted small">Calls <code>POST /auth/refresh</code>. On success, the session is updated with the new tokens.</p>
+    </div>
+
+    <div class="col-lg-5">
+        <AppletCard Title="Input" Icon="bi-input-cursor-text">
+            <div class="mb-3">
+                <label class="form-label small fw-medium">Refresh Token</label>
+                <textarea class="form-control font-mono small" rows="4" @bind="_refreshToken" placeholder="Paste refresh token..."></textarea>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary btn-sm" @onclick="DoRefresh" disabled="@_loading">
+                    @if (_loading) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                    <i class="bi bi-play-fill me-1"></i>Refresh
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="UseCurrentRefreshToken">
+                    <i class="bi bi-lightning me-1"></i>Use current token
+                </button>
+            </div>
+            @if (_sessionUpdated)
+            {
+                <div class="alert alert-success py-2 small mt-3">
+                    <i class="bi bi-check-circle me-1"></i>Session updated with new tokens.
+                </div>
+            }
+        </AppletCard>
+    </div>
+
+    <div class="col-lg-7">
+        <AppletCard Title="Result" Icon="bi-card-list"
+                    Badge="@_badge" BadgeClass="@_badgeClass">
+            @if (_resultJson is not null)
+            {
+                <JsonViewer Json="@_resultJson" />
+            }
+            else if (_loading)
+            {
+                <div class="text-center text-muted py-4 small">
+                    <span class="spinner-border spinner-border-sm me-2"></span>Refreshing...
+                </div>
+            }
+            else
+            {
+                <div class="text-muted small py-2">Run the request to see the result.</div>
+            }
+        </AppletCard>
+    </div>
+</div>
+
+@code {
+    private string  _refreshToken = "";
+    private string? _resultJson;
+    private bool    _loading;
+    private bool    _sessionUpdated;
+    private string? _badge;
+    private string  _badgeClass = "bg-secondary";
+
+    protected override void OnInitialized()
+    {
+        _refreshToken = AuthState.CurrentAuth?.IdpRefreshToken ?? "";
+    }
+
+    private void UseCurrentRefreshToken()
+    {
+        _refreshToken = AuthState.CurrentAuth?.IdpRefreshToken ?? "";
+    }
+
+    private async Task DoRefresh()
+    {
+        if (string.IsNullOrWhiteSpace(_refreshToken)) return;
+        _loading        = true;
+        _resultJson     = null;
+        _badge          = null;
+        _sessionUpdated = false;
+
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            var result = await GateAuth.RefreshTokenAsync(_refreshToken.Trim());
+            sw.Stop();
+            _resultJson = JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
+            _badge      = result.IsSuccess ? "SUCCESS" : "FAILED";
+            _badgeClass = result.IsSuccess ? "bg-success" : "bg-danger";
+
+            if (result.IsSuccess)
+            {
+                AuthState.NotifyAuthSuccess(result);
+                _sessionUpdated = true;
+                _refreshToken   = result.IdpRefreshToken ?? _refreshToken;
+            }
+
+            OpLog.Log("POST", "/auth/refresh", result.IsSuccess ? 200 : 401, sw.ElapsedMilliseconds, result.IsSuccess);
+        }
+        catch (Exception ex)
+        {
+            sw.Stop();
+            _badge      = "ERROR";
+            _badgeClass = "bg-danger";
+            _resultJson = JsonSerializer.Serialize(new { error = ex.Message });
+            OpLog.Log("POST", "/auth/refresh", 0, sw.ElapsedMilliseconds, false, ex.Message);
+        }
+        finally { _loading = false; }
+    }
+}

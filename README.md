@@ -235,10 +235,7 @@ Zero changes to any FAST application.
 
 ---
 
-## Running tests
+## Using the FAST.Gate.Admin Application
 
-```bash
-dotnet test tests/FAST.Gate.Client.Tests       # Client unit tests
-dotnet test tests/FAST.Gate.Tests              # Gate unit tests
-dotnet test tests/FAST.Gate.IntegrationTests   # Full end-to-end (no live Logto needed)
-```
+[FASTGateOverview.webm](https://github.com/user-attachments/assets/9e0cf2ae-687f-4f1f-9f55-1f2fd2b441f0)
+

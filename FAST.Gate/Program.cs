@@ -35,6 +35,6 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 app.MapFastGateManagement();
 app.MapFastGateAuth();
 
-app.Run();
+FAST.Orator.Toolkit.ApplicationsRegistry.Run(app.Run);
 
 public partial class Program { }

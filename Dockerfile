@@ -1,36 +1,27 @@
-# ── Stage 1: Build ────────────────────────────────────────────────────────────
+# Stage 1: Build the application
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy solution and project files first (layer cache for restore)
-COPY FAST.Gate.sln ./
-COPY FAST.Gate/FAST.Gate.csproj             FAST.Gate/
-COPY FAST.Gate.Client/FAST.Gate.Client.csproj FAST.Gate.Client/
+# Copy the project file using the specific folder structure
+COPY ["FAST.Gate/FAST.Gate.csproj", "FAST.Gate/"]
 
-RUN dotnet restore FAST.Gate/FAST.Gate.csproj
+# Restore NuGet packages
+RUN dotnet restore "FAST.Gate/FAST.Gate.csproj"
 
-# Copy all source and build
-COPY FAST.Gate/       FAST.Gate/
-COPY FAST.Gate.Client/ FAST.Gate.Client/
+# Copy the remaining source code
+COPY . .
 
-RUN dotnet publish FAST.Gate/FAST.Gate.csproj \
-    --configuration Release \
-    --no-restore \
-    --output /app/publish
+# Build and publish the application
+WORKDIR "/src/FAST.Gate"
+RUN dotnet publish "FAST.Gate.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-# ── Stage 2: Runtime ───────────────────────────────────────────────────────────
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
-
-# Non-root user for security
-RUN addgroup --system fastgate && adduser --system --ingroup fastgate fastgate
-USER fastgate
-
+# Stage 2: Final runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
-COPY --from=build /app/publish .
-
 EXPOSE 8080
+EXPOSE 8081
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:8080/health || exit 1
+# Copy the published output from the build stage
+COPY --from=build /app/publish .
 
 ENTRYPOINT ["dotnet", "FAST.Gate.dll"]

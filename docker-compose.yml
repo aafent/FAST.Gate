@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   fast-gate:
     build:
@@ -20,7 +18,7 @@ services:
       Gate__Sso__Enabled: "true"
       Gate__Sso__AllowedRedirectUris__0: "${SSO_REDIRECT_URI_0}"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 5s
       retries: 3

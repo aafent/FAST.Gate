@@ -8,6 +8,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     
+    # ─── ADD THESE TWO LINES HERE ──────────────────────────────
+    permissions:
+      packages: write
+      contents: read
+    # ───────────────────────────────────────────────────────────
+    
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -22,8 +28,6 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    # Native Docker action that automatically downcases the repository name 
-    # and generates safe tags for you.
     - name: Extract Docker metadata
       id: meta
       uses: docker/metadata-action@v5

@@ -36,3 +36,4 @@ nuget.config
 
 # FAST
 LocalOnly/
+appsettings.Development.json

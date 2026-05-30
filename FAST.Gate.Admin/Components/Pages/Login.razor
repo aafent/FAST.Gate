@@ -156,7 +156,20 @@
 
         try
         {
-            var ssoUrl = await GateAuth.GetSsoLoginUrlAsync();
+            // Use the URL the user typed — not the one baked into GateAuthClient at startup.
+            // GateAuthClient's HttpClient BaseAddress is fixed at DI registration time,
+            // so we build a fresh HttpClient here with the user-provided URL.
+            var baseUrl = _gateUrl.TrimEnd('/');
+            var redirectUri = Uri.EscapeDataString(GateSettings.SsoRedirectUri);
+            using var http = new System.Net.Http.HttpClient();
+            http.BaseAddress = new Uri(baseUrl);
+
+            var response = await http.GetAsync($"/auth/sso/url?redirectUri={redirectUri}");
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+            var ssoUrl = json.GetProperty("url").GetString()
+                ?? throw new InvalidOperationException("FAST.Gate returned no SSO URL.");
 
             _step          = 2;
             _statusMessage = "Redirecting to Logto...";

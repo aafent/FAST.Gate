@@ -1,6 +1,6 @@
 @FAST.Gate_HostAddress = http://localhost:5044
 #@RedirectUri = https://2uaw9x.logto.app/oidc/callback
-@RedirectUri = https://webhook.site/44665de5-6810-4108-a361-3b89080ddf4f
+@RedirectUri = https://localhost:7002/auth/callback
 
 ### Health check
 GET {{FAST.Gate_HostAddress}}/health
@@ -19,7 +19,7 @@ POST {{FAST.Gate_HostAddress}}/auth/sso/exchange
 Content-Type: application/json
 
 {
-  "code": "9-FcK-oNFbonXjUELI100dl_w8qA9mvbhS0SRs9s9K-",
+  "code": "p42l_EbFXXmbwSuwz59wewbSX0WympzKP37DrqsIfYW",
   "redirectUri": "{{RedirectUri}}"
 }
 
@@ -27,7 +27,7 @@ Content-Type: application/json
 
 ### Validate token
 GET {{FAST.Gate_HostAddress}}/auth/validate
-Authorization: Bearer eyJhbGciOiJFUzM4NCIsInR5cCI6ImF0K2p3dCIsImtpZCI6ImFLYU9HTDJmOFVma0g4dWZ5Y0RQUHRQS0F4OGFhNzlWbWotOUstd3MwZHMifQ.eyJqdGkiOiJHbGItalZQcWFkSDlVNGw5UU41MkMiLCJzdWIiOiJqa3ozeDdwenZjYnoiLCJpYXQiOjE3Nzk2MzgxNjEsImV4cCI6MTc3OTY0MTc2MSwic2NvcGUiOiIiLCJjbGllbnRfaWQiOiJuNHhhZmxqNjZpamMxY3NpbmZsajMiLCJpc3MiOiJodHRwczovLzJ1YXc5eC5sb2d0by5hcHAvb2lkYyIsImF1ZCI6Imh0dHBzOi8vZmFzdC5nYXRlLmludGVybmFsIn0.oFtqGPxotr_GrbytUwI3e-SgpDpFxsPR4q3AcRmC2oy8aba7gErYCI93AA6DL-EQ4MKn4GRDaKxLlhINfRP6TfQ4JZM6nSn3MOqRLkLkBktdF8FKH2GuZaTEixeza2Hb
+Authorization: Bearer eyJhbGciOiJFUzM4NCIsInR5cCI6ImF0K2p3dCIsImtpZCI6ImFLYU9HTDJmOFVma0g4dWZ5Y0RQUHRQS0F4OGFhNzlWbWotOUstd3MwZHMifQ.eyJqdGkiOiJCNXF5cS1BUFl3bFczR2t0bFVIR0UiLCJzdWIiOiJqa3ozeDdwenZjYnoiLCJpYXQiOjE3ODAxMjMxNzQsImV4cCI6MTc4MDEyNjc3NCwic2NvcGUiOiIiLCJjbGllbnRfaWQiOiJuNHhhZmxqNjZpamMxY3NpbmZsajMiLCJpc3MiOiJodHRwczovLzJ1YXc5eC5sb2d0by5hcHAvb2lkYyIsImF1ZCI6Imh0dHBzOi8vZmFzdC5nYXRlLmludGVybmFsIn0.nDNHnbc0nh8y5BL2Hd6Ych6SBdNOfcH5GoB4HzaFx1CfcGsr9hewIvRWAhyg5OA3U8RYcpAdI7lXDrEk4wKsUvTKvK0Ix-3EBgdSz7rvvprp4CfZ3klPwr4ACB9SsRi33EBgdSz7rvvprp4CfZ3klPwr4ACB9SsRi36nSn3MOqRLkLkBktdF8FKH2GuZaTEixeza2Hb
 
 
 ###

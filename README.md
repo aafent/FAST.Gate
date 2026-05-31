@@ -4,6 +4,9 @@ The **single authentication and authorization gateway** for the FAST ecosystem.
 
 Every FAST application — Blazor apps, web services, APIs — delegates all identity needs to FAST.Gate. FAST.Gate handles everything by delegating to Logto (or any future IdP). The FAST ecosystem never knows or cares about Logto directly.
 
+[![See the docker container](https://img.shields.io/badge/See%20Docker%20Container-blue?style=for-the-badge)](/aafent/FAST.Gate/pkgs/container/fast-gate)
+[![See Wiki for more](https://img.shields.io/badge/Wiki%20for%20more-green?style=for-the-badge)](/aafent/FAST.Gate/wiki)
+
 ---
 
 ## What FAST.Gate provides
